@@ -12,6 +12,8 @@ namespace XF.LocalDB
 	{
         #region ViewModels
         public static AlunoViewModel AlunoVM { get; set; }
+
+        public static ProfessorViewModel ProfessorVM { get; set; }
         public static UsuarioViewModel UsuarioVM { get; set; }
         #endregion
 
@@ -26,6 +28,7 @@ namespace XF.LocalDB
         private void InitializeApplication()
         {
             if (AlunoVM == null) AlunoVM = new AlunoViewModel();
+            if (ProfessorVM == null) ProfessorVM = new ProfessorViewModel();
             if (UsuarioVM == null) UsuarioVM = new UsuarioViewModel();
         }
 

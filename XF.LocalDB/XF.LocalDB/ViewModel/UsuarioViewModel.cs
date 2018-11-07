@@ -44,7 +44,7 @@ namespace XF.LocalDB.ViewModel
         {
             UsuarioModel = new Usuario();
             IsAutenticarCMD = new IsAutenticarCMD(this);
-            this.GetUsuarios("https://apiaplicativofiap.azurewebsites.net/content/xml/usuarios.xml");
+            this.GetUsuarios("http://apiaplicativofiap.azurewebsites.net/content/xml/usuarios.xml");
         }
 
         public void IsAutenticar(Usuario paramUser)

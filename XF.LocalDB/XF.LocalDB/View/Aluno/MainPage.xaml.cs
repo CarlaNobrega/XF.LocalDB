@@ -21,7 +21,7 @@ namespace XF.LocalDB.View.Aluno
         protected override void OnAppearing()
         {
             base.OnAppearing();
-            App.AlunoVM.Carregar();
+            App.ProfessorVM.Carregar();
         }                    
     }
 }

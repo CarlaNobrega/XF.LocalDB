@@ -7,25 +7,25 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using Xamarin.Forms;
 using XF.LocalDB.Model;
 
 namespace XF.LocalDB.ViewModel
 {
-    public class AlunoViewModel : INotifyPropertyChanged
-    {
-        #region Propriedades
+    public class ProfessorViewModel
+    {      
+        public List<Professor> CopiaListaProfessores { get; private set; }
 
-        public Aluno AlunoModel { get; set; }
+         #region Propriedades
+        public Professor ProfessoroModel { get; set; }
         public string Nome { get { return App.UsuarioVM.Nome; } }
 
-        private Aluno selecionado;
-        public Aluno Selecionado
+        private Professor selecionado;
+        public Professor Selecionado
         {
             get { return selecionado; }
             set
             {
-                selecionado = value as Aluno;
+                selecionado = value as Professor;
                 EventPropertyChanged();
             }
         }
@@ -43,39 +43,34 @@ namespace XF.LocalDB.ViewModel
                 AplicarFiltro();
             }
         }
-
-        public List<Aluno> CopiaListaAlunos;
-        public ObservableCollection<Aluno> Alunos { get; set; } = new ObservableCollection<Aluno>();
+               
+        public ObservableCollection<Professor> Professores { get; set; } = new ObservableCollection<Professor>();
 
         // UI Events
-        public OnAdicionarAlunoCMD OnAdicionarAlunoCMD { get; }
-        public OnEditarAlunoCMD OnEditarAlunoCMD { get; }
-        public OnDeleteAlunoCMD OnDeleteAlunoCMD { get; }
+        public OnAdicionarProfessorCMD OnAdicionarProfessorCMD { get; }
+        public OnEditarProfessorCMD OnEditarProfessorCMD { get; }
+        public OnDeleteProfessorCMD OnDeleteProfessorCMD { get; }
         public ICommand OnSairCMD { get; private set; }
         public ICommand OnNovoCMD { get; private set; }
 
         #endregion
 
-
-
-
-        public AlunoViewModel()
+        public ProfessorViewModel()
         {
-            AlunoRepository repository = AlunoRepository.Instance;
+            var teste = ProfessorRepository.GetProfessoresSqlAzureAsync();
+            OnAdicionarProfessorCMD = new OnAdicionarProfessorCMD(this);
+            OnEditarProfessorCMD = new OnEditarProfessorCMD(this);
+            OnDeleteProfessorCMD = new OnDeleteProfessorCMD(this);
+            OnSairCMD = new Xamarin.Forms.Command(OnSair);
+            OnNovoCMD = new Xamarin.Forms.Command(OnNovo);
 
-            OnAdicionarAlunoCMD = new OnAdicionarAlunoCMD(this);
-            OnEditarAlunoCMD = new OnEditarAlunoCMD(this);
-            OnDeleteAlunoCMD = new OnDeleteAlunoCMD(this);
-            OnSairCMD = new Command(OnSair);
-            OnNovoCMD = new Command(OnNovo);
-
-            CopiaListaAlunos = new List<Aluno>();
+            CopiaListaProfessores = new List<Professor>();
             Carregar();
         }
 
         public void Carregar()
         {
-            CopiaListaAlunos = AlunoRepository.GetAlunos().ToList();
+            CopiaListaProfessores = await ProfessorRepository.GetProfessoresSqlAzureAsync();
             AplicarFiltro();
         }
 
@@ -84,28 +79,27 @@ namespace XF.LocalDB.ViewModel
             if (pesquisaPorNome == null)
                 pesquisaPorNome = "";
 
-            var resultado = CopiaListaAlunos.Where(n => n.Nome.ToLowerInvariant()
-                                .Contains(PesquisaPorNome.ToLowerInvariant().Trim())).ToList();
+            var resultado = CopiaListaProfessores.Where(n => n.Nome.ToLowerInvariant().Contains(PesquisaPorNome.ToLowerInvariant().Trim())).ToList();
 
-            var removerDaLista = Alunos.Except(resultado).ToList();
+            var removerDaLista = Professores.Except(resultado).ToList();
             foreach (var item in removerDaLista)
             {
-                Alunos.Remove(item);
+                Professores.Remove(item);
             }
 
             for (int index = 0; index < resultado.Count; index++)
             {
                 var item = resultado[index];
-                if (index + 1 > Alunos.Count || !Alunos[index].Equals(item))
-                    Alunos.Insert(index, item);
+                if (index + 1 > Professores.Count || !Professores[index].Equals(item))
+                    Professores.Insert(index, item);
             }
         }
 
-        public void Adicionar(Aluno paramAluno)
+        public void Adicionar(Professor paramProfessor)
         {
-            if ((paramAluno == null) || (string.IsNullOrWhiteSpace(paramAluno.Nome)))
+            if ((paramProfessor == null) || (string.IsNullOrWhiteSpace(paramProfessor.Nome)))
                 App.Current.MainPage.DisplayAlert("Atenção", "O campo nome é obrigatório", "OK");
-            else if (AlunoRepository.SalvarAluno(paramAluno) > 0)
+            else if (ProfessorRepository.PostProfessorSqlAzureAsync(paramProfessor))
                 App.Current.MainPage.Navigation.PopAsync();
             else
                 App.Current.MainPage.DisplayAlert("Falhou", "Desculpe, ocorreu um erro inesperado =(", "OK");
@@ -122,9 +116,9 @@ namespace XF.LocalDB.ViewModel
             if (await App.Current.MainPage.DisplayAlert("Atenção?",
                 string.Format("Tem certeza que deseja remover o {0}?", Selecionado.Nome), "Sim", "Não"))
             {
-                if (AlunoRepository.RemoverAluno(Selecionado.Id) > 0)
+                if (ProfessorRepository.DeleteProfessorSqlAzureAsync(Selecionado.Id))
                 {
-                    CopiaListaAlunos.Remove(Selecionado);
+                    CopiaListaProfessores.Remove(Selecionado);
                     Carregar();
                 }
                 else
@@ -155,10 +149,10 @@ namespace XF.LocalDB.ViewModel
         }
     }
 
-    public class OnAdicionarAlunoCMD : ICommand
+    public class OnAdicionarProfessorCMD : ICommand
     {
-        private AlunoViewModel alunoVM;
-        public OnAdicionarAlunoCMD(AlunoViewModel paramVM)
+        private ProfessorViewModel alunoVM;
+        public OnAdicionarProfessorCMD(ProfessorViewModel paramVM)
         {
             alunoVM = paramVM;
         }
@@ -167,41 +161,43 @@ namespace XF.LocalDB.ViewModel
         public bool CanExecute(object parameter) => true;
         public void Execute(object parameter)
         {
-            alunoVM.Adicionar(parameter as Aluno);
+            alunoVM.Adicionar(parameter as Professor);
         }
     }
 
-    public class OnEditarAlunoCMD : ICommand
+    public class OnEditarProfessorCMD : ICommand
     {
-        private AlunoViewModel alunoVM;
-        public OnEditarAlunoCMD(AlunoViewModel paramVM)
+        private ProfessorViewModel professoroVM;
+        public OnEditarProfessorCMD(ProfessorViewModel paramVM)
         {
-            alunoVM = paramVM;
+            professoroVM = paramVM;
         }
         public event EventHandler CanExecuteChanged;
         public void EditarCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
         public bool CanExecute(object parameter) => (parameter != null);
         public void Execute(object parameter)
         {
-            App.AlunoVM.Selecionado = parameter as Aluno;
-            alunoVM.Editar();
+            App.ProfessorVM.Selecionado = parameter as Professor;
+            professoroVM.Editar();
         }
     }
 
-    public class OnDeleteAlunoCMD : ICommand
+    public class OnDeleteProfessorCMD : ICommand
     {
-        private AlunoViewModel alunoVM;
-        public OnDeleteAlunoCMD(AlunoViewModel paramVM)
+        private ProfessorViewModel professorVM;
+        public OnDeleteProfessorCMD(ProfessorViewModel paramVM)
         {
-            alunoVM = paramVM;
+            professorVM = paramVM;
         }
         public event EventHandler CanExecuteChanged;
         public void DeleteCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
         public bool CanExecute(object parameter) => (parameter != null);
         public void Execute(object parameter)
         {
-            App.AlunoVM.Selecionado = parameter as Aluno;
-            alunoVM.Remover();
+            App.ProfessorVM.Selecionado = parameter as Professor;
+            professorVM.Remover();
         }
     }
+
 }
+
